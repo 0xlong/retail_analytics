@@ -1,0 +1,42 @@
+# Antigravity AI Ignore File
+# Used to exclude files from AI context to save tokens and avoid noise.
+
+# Version control
+.git/
+.svn/
+.hg/
+
+# Large data files
+datasets/
+*.csv
+*.parquet
+*.jsonl
+*.h5
+*.npy
+*.npz
+*.sqlite3
+
+# Build and environment
+node_modules/
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# IDE and tool specific
+.vscode/
+.idea/
+.claude/
+.gemini/
+.antigravity/

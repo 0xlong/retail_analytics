@@ -1,0 +1,9 @@
+datasets/
+dataset/
+*.csv
+*.parquet
+*.jsonl
+*.h5
+*.npy
+*.npz
+*.sqlite3

@@ -1,0 +1,10 @@
+# Data Processing & Storage
+duckdb>=1.0.0
+pandas>=2.0.0
+
+# Data Transformation (dbt)
+dbt-core>=1.8.0
+dbt-duckdb>=1.8.0
+
+# AI Agent
+anthropic>=0.25.0
