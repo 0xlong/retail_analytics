@@ -20,6 +20,10 @@ End-to-end retail analytics project demonstrating the On Analytics tech stack: *
 | 8 | **`discount_tier` as a dbt macro** | Reusable CASE logic, not hardcoded. Single source of truth for tier boundaries — changing thresholds propagates to all models. Demonstrates macro fluency. |
 | 9 | **Exposures for dashboard lineage** | Documents that Hex dashboard depends on specific marts. Shows downstream impact awareness — critical for governed analytics environments with PR-based workflows. |
 | 10 | **AI agent queries marts, not raw data** | Agent uses governed dbt mart tables, not `retail_raw`. Ensures consistent metric definitions between dashboard and agent answers. Matches On's emphasis on well-governed analytical assets. |
+| 11 | **Removed `* 100` scaling from dbt models** | BI tools (like Looker Studio) act as a semantic layer and expect pure mathematical decimals (e.g. `0.084`) for percentages. Pre-scaling by 100 in the dbt layer violates separation of concerns between data/presentation and breaks Looker's Percent data type. |
+| 12 | **Split `availability_rate` vs `in_stock_rate`** | Treated `in_stock` as the "Digital Shelf" (active in catalog) and `available` as the "Warehouse Cycle" (measured by HIGH/MEDIUM/LOW/OOS levels). Surfaces ghost inventory where items appear stocked but fulfillment centers are empty. |
+| 13 | **Clustered `sport_tags` → `sport_category` macro** | Raw `sport_tags` had 347 pipe-delimited combos (e.g. `Lifestyle\|Basketball`, `Studio Classes\|Workouts\|Training & Gym\|Yoga`). Extracted primary tag via `SPLIT_PART` and mapped to 9 clean categories (Lifestyle, Running, Basketball, etc.). Unusable as a BI dimension without clustering. |
+| 14 | **Classified `color_name` → `color_trend` macro** | Raw `color_name` had 33K distinct values across 15+ languages (Schwarz, Noir, 黑, ブラック…) with compound `/` separators. Extracted primary color, matched against multilingual core-color dictionary, and classified as Core (Black/White/Grey) vs Seasonal. Enables the "are trendy colorways a markdown liability?" analysis without manual cleanup. |
 
 ---
 
@@ -123,6 +127,7 @@ retail-intelligence/
 │   │   └── marts/
 │   │       ├── mart_market_performance.sql
 │   │       ├── mart_merchandising_mix.sql
+│   │       ├── mart_product_attributes_performance.sql
 │   │       └── schema.yml
 │   ├── tests/
 │   │   └── assert_positive_prices.sql
@@ -507,6 +512,16 @@ models:
       - name: category
         tests:
           - not_null
+
+  - name: mart_product_attributes_performance
+    description: "Brand, sport, color, and subcategory performance — supports brand equity, lifestyle vs performance, and subcategory OOS analysis"
+    columns:
+      - name: market
+        tests:
+          - not_null
+      - name: brand_name
+        tests:
+          - not_null
 ```
 
 **3.9 — Exposures (documents dashboard dependency)**
@@ -559,8 +574,11 @@ Hex has native DuckDB support — upload the `.duckdb` file directly or connect 
 | Merchandising Mix | Stacked bar | mart_merchandising_mix | sku_count by category, stacked by gender |
 | Promo vs Full Price | Donut chart | mart_merchandising_mix | on_promo_count vs full_price_count |
 | Price Architecture | Scatter plot | mart_merchandising_mix | avg_price (x) vs avg_markdown_pct (y), sized by sku_count |
+| Brand Discount Strategy | Grouped bar | mart_product_attributes_performance | avg_markdown_pct by brand_name |
+| Lifestyle vs Performance | Grouped bar | mart_product_attributes_performance | avg_price + promo_penetration_pct by sport_tags |
+| Subcategory OOS | Horizontal bar | mart_product_attributes_performance | oos_rate_pct by subcategory, top 10 |
 
-**Filters:** Country dropdown, Category dropdown, Gender toggle.
+**Filters:** Country dropdown, Category dropdown, Gender toggle, Brand dropdown, Sport Tags dropdown.
 
 **4.3 — Additional metrics - we can use maybe**
 + Pricing Strategy & Price Architecture

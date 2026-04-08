@@ -7,6 +7,7 @@ exposures:
     depends_on:
       - ref('mart_market_performance')
       - ref('mart_merchandising_mix')
+      - ref('mart_product_attributes_performance')
     owner:
       name: "Retail Analytics"
       email: "retail-analytics@on.com"

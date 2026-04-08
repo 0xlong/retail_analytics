@@ -2,6 +2,8 @@ SELECT
     country_code,
     product_id,
     product_name,
+    brand_name,
+    subcategory,
     category,
     gender,
     full_price,
@@ -15,5 +17,7 @@ SELECT
     availability_level,
     available_market,
     in_stock,
-    sport_tags
+    sport_tags,
+    {{ sport_category('sport_tags') }} AS sport_category,
+    {{ color_trend('color_name') }}    AS color_trend
 FROM {{ ref('stg_nike_catalog') }}

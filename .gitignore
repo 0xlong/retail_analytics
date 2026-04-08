@@ -158,6 +158,7 @@ cython_debug/
 datasets/
 project_context/
 CLAUDE.md
+*.duckdb
 *.csv
 *.parquet
 *.jsonl
