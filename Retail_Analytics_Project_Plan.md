@@ -6,10 +6,52 @@ End-to-end retail analytics project demonstrating the On Analytics tech stack: *
 
 ---
 
+## Dataset
+
+Global_Nike.csv - 1.4M rows, 45 markets, 850mb size
+
+| Column Name | Data Type | Description |
+|-------------|-----------|-------------|
+| snapshot_date | str/date | The specific date when the data record was captured from the Nike website. |
+| country_code | str | "Two-letter ISO country code (e.g., US, FR, JP) representing the market." |
+| product_name | str | The customer-facing display name of the product. |
+| model_number | str | "The Nike style code or base model identifier (e.g., NIKGD001)." |
+| currency | str | "The local currency code for the specific market (e.g., USD, EUR)." |
+| price_local | float64 | The original list price in the local currency. |
+| sale_price_local | float64 | The current discounted price in local currency (NaN if no sale is active). |
+| gender_segment | str | "The target demographic for the product (e.g., MEN, WOMEN, KIDS)." |
+| size_label | str | "The size label displayed on the storefront (e.g., XL, 10.5, 20L)." |
+| category | str | "High-level product classification (e.g., APPAREL, FOOTWEAR)." |
+| subcategory | str | "Detailed product description or sub-type (e.g., Tie-Dye Crew-Neck Sweatshirt)." |
+| product_id | str | Unique internal UUID for the product entity. |
+| sku | str | Unique Stock Keeping Unit (SKU) identifier for a specific style-color-size. |
+| style_color | str | "The specific code combining style and colorway (e.g., NIKGD001-TYD)." |
+| brand_name | str | "The primary brand under the Nike umbrella (e.g., Nike, Jordan, Converse)." |
+| color_name | str | "The descriptive name of the product colorway (e.g., Multi-Color, Black/White)." |
+| size_count | float64 | The total number of size options listed for this product. |
+| available_size_count | float64 | The number of sizes currently available in stock. |
+| available | bool | Boolean flag indicating if the specific SKU is currently available. |
+| availability_level | str | "Status code for inventory (e.g., OOS for Out of Stock, LOW_STOCK)." |
+| available_market | bool | Indicates if the product is generally active/available in that country's market. |
+| in_stock | bool | Boolean flag indicating if the product is currently ready for shipment. |
+| discount_pct | float64 | The percentage of discount applied (calculated from local and sale price). |
+| employee_price | float64 | Special pricing available for Nike employees (often null in public data). |
+| product_url | str | Direct web link to the product's landing page on Nike.com. |
+| canonical_url | str | The master SEO-friendly URL for the product. |
+| image_url | str | Direct link to the primary high-resolution product image hosted by Nike. |
+| gtin | float64 | Global Trade Item Number (standardized barcode number). |
+| stock_keeping_unit_id | float64 | Internal system ID for the SKU. |
+| catalog_sku_id | str | Internal catalog mapping ID for the SKU. |
+| nike_size | str | Standardized internal Nike size code. |
+| localized_size | str | "Size label converted to local market standards (e.g., UK vs US vs EU sizes)." |
+| size_conversion_id | str | ID used for mapping sizes across different regional standards. |
+| sport_tags | str | "Labels identifying the sport or activity (e.g., Football, Running, Lifestyle)." |
+| record_source | str | "Identifier for the origin of the data row (e.g., ""thread_exact"")." |
+
 ## Architecture
 
 ```
-Global_Nike.csv (800MB, 1.4M rows)
+Global_Nike.csv (850MB, 1.4M rows)
         │
         ▼
 ┌──────────────────┐

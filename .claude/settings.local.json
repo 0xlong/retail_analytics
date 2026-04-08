@@ -2,9 +2,7 @@
   "project_name": "adidas_retail_analytics",
   "permissions": {
     "deny": [
-      "Read(datasets/**)",
-      "Glob(datasets/**)",
-      "Grep(datasets/**)",
+      "Read(datasets/**)"
     ]
   }
 }

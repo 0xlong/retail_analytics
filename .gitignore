@@ -156,6 +156,7 @@ cython_debug/
 
 # Data and Datasets (ignore large files)
 datasets/
+project_context/
 *.csv
 *.parquet
 *.jsonl
