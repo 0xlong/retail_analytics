@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: retail_raw
+    schema: retail_raw
+    freshness:
+      warn_after: {count: 3, period: day}
+      error_after: {count: 7, period: day}
+    loaded_at_field: "CAST(snapshot_date AS TIMESTAMP)"
+    tables:
+      - name: nike_catalog
+        description: "Raw Nike global catalog — 1.4M SKU-level rows across 45 markets, snapshot date 2026-03-19"

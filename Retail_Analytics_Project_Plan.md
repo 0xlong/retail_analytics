@@ -6,6 +6,23 @@ End-to-end retail analytics project demonstrating the On Analytics tech stack: *
 
 ---
 
+## Architectural Decisions
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 1 | **DuckDB as local warehouse** | Mirrors BigQuery SQL dialect (window functions, `FILTER`, `PERCENTILE_CONT`). Zero-config, file-based — portable to cloud warehouses with minimal rewrite. Matches On's BigQuery-preferred stack. |
+| 2 | **dbt Core with dbt-duckdb adapter** | Industry-standard transformation layer. staging → intermediate → marts layering enforces separation of concerns. Demonstrates dbt fluency (tests, macros, source freshness, exposures) called out in job posting. |
+| 3 | **Dropped 4 columns: `size_count`, `available_size_count`, `employee_price`, `gtin`** | All 100% NULL in dataset. Loading nulls wastes storage and misleads downstream consumers. Discovered during EDA profiling — not assumed from schema. |
+| 4 | **Replaced size fill rate with availability-based metrics** | Original plan used `available_size_count / size_count` for inventory health. Both columns null. Replaced with `availability_rate_pct` (from `available` flag), `oos_rate_pct` (from `availability_level`), and `size_depth` (`COUNT(DISTINCT size_label)`). Same analytical intent, grounded in actual data. |
+| 5 | **Inverted polarity on OOS metric** | `oos_rate_pct` is a negative metric (lower = better), unlike the fill rate it replaced (higher = better). All ORDER BY clauses and dashboard interpretations adjusted to ASC. Prevents misleading "top performers" rankings. |
+| 6 | **Kept `size_label`, `color_name`, `style_color`** | Not used in core marts but retained for planned colorway diversity and size-level analyses (additional metrics section). Conscious choice to preserve analytical optionality without cluttering the mart layer. |
+| 7 | **Dropped URL/ID metadata columns** | `product_url`, `canonical_url`, `image_url`, `stock_keeping_unit_id`, `catalog_sku_id`, `nike_size`, `localized_size`, `size_conversion_id`, `record_source` — no analytical value for KPI reporting. Keeps staging model lean. |
+| 8 | **`discount_tier` as a dbt macro** | Reusable CASE logic, not hardcoded. Single source of truth for tier boundaries — changing thresholds propagates to all models. Demonstrates macro fluency. |
+| 9 | **Exposures for dashboard lineage** | Documents that Hex dashboard depends on specific marts. Shows downstream impact awareness — critical for governed analytics environments with PR-based workflows. |
+| 10 | **AI agent queries marts, not raw data** | Agent uses governed dbt mart tables, not `retail_raw`. Ensures consistent metric definitions between dashboard and agent answers. Matches On's emphasis on well-governed analytical assets. |
+
+---
+
 ## Dataset
 
 Global_Nike.csv - 1.4M rows, 45 markets, 850mb size
@@ -28,18 +45,18 @@ Global_Nike.csv - 1.4M rows, 45 markets, 850mb size
 | style_color | str | "The specific code combining style and colorway (e.g., NIKGD001-TYD)." |
 | brand_name | str | "The primary brand under the Nike umbrella (e.g., Nike, Jordan, Converse)." |
 | color_name | str | "The descriptive name of the product colorway (e.g., Multi-Color, Black/White)." |
-| size_count | float64 | The total number of size options listed for this product. |
-| available_size_count | float64 | The number of sizes currently available in stock. |
+| ~~size_count~~ | ~~float64~~ | ~~The total number of size options listed for this product.~~ **100% NULL — DROPPED** |
+| ~~available_size_count~~ | ~~float64~~ | ~~The number of sizes currently available in stock.~~ **100% NULL — DROPPED** |
 | available | bool | Boolean flag indicating if the specific SKU is currently available. |
 | availability_level | str | "Status code for inventory (e.g., OOS for Out of Stock, LOW_STOCK)." |
 | available_market | bool | Indicates if the product is generally active/available in that country's market. |
 | in_stock | bool | Boolean flag indicating if the product is currently ready for shipment. |
 | discount_pct | float64 | The percentage of discount applied (calculated from local and sale price). |
-| employee_price | float64 | Special pricing available for Nike employees (often null in public data). |
+| ~~employee_price~~ | ~~float64~~ | ~~Special pricing available for Nike employees (often null in public data).~~ **100% NULL — DROPPED** |
 | product_url | str | Direct web link to the product's landing page on Nike.com. |
 | canonical_url | str | The master SEO-friendly URL for the product. |
 | image_url | str | Direct link to the primary high-resolution product image hosted by Nike. |
-| gtin | float64 | Global Trade Item Number (standardized barcode number). |
+| ~~gtin~~ | ~~float64~~ | ~~Global Trade Item Number (standardized barcode number).~~ **100% NULL — DROPPED** |
 | stock_keeping_unit_id | float64 | Internal system ID for the SKU. |
 | catalog_sku_id | str | Internal catalog mapping ID for the SKU. |
 | nike_size | str | Standardized internal Nike size code. |
@@ -213,25 +230,30 @@ ORDER BY country_code, category, discount_rank;
 
 **2.2 — CTEs: Assortment & Availability KPIs**
 ```sql
-WITH size_availability AS (
+WITH product_availability AS (
   SELECT
     country_code,
     product_id,
     product_name,
     category,
-    available_size_count / NULLIF(size_count, 0) AS size_fill_rate
+    COUNT(DISTINCT size_label)                                        AS size_depth,
+    COUNT(*) FILTER (WHERE available)                                 AS available_skus,
+    COUNT(*)                                                          AS total_skus,
+    COUNT(*) FILTER (WHERE availability_level = 'OOS')                AS oos_skus
   FROM retail_raw.nike_catalog
-  WHERE size_count > 0
+  GROUP BY country_code, product_id, product_name, category
 ),
 
-product_scoring AS (
+market_scoring AS (
   SELECT
     country_code,
     category,
-    COUNT(DISTINCT product_id) AS assortment_width,
-    AVG(size_fill_rate) AS avg_fill_rate,
-    COUNT(*) FILTER (WHERE size_fill_rate = 1.0) AS fully_stocked_products
-  FROM size_availability
+    COUNT(DISTINCT product_id)                                        AS assortment_width,
+    ROUND(AVG(size_depth), 1)                                         AS avg_size_depth,
+    ROUND(SUM(available_skus) * 100.0 / NULLIF(SUM(total_skus), 0), 1) AS availability_rate_pct,
+    ROUND(SUM(oos_skus) * 100.0 / NULLIF(SUM(total_skus), 0), 1)     AS oos_rate_pct,
+    COUNT(*) FILTER (WHERE oos_skus = 0)                              AS fully_available_products
+  FROM product_availability
   GROUP BY country_code, category
 )
 
@@ -239,11 +261,15 @@ SELECT
   country_code,
   category,
   assortment_width,
-  ROUND(avg_fill_rate * 100, 1) AS fill_rate_pct,
-  fully_stocked_products,
-  ROUND(fully_stocked_products * 100.0 / NULLIF(assortment_width, 0), 1) AS full_stock_pct
-FROM product_scoring
-ORDER BY assortment_width DESC;
+  avg_size_depth,
+  availability_rate_pct,
+  oos_rate_pct,
+  fully_available_products,
+  ROUND(fully_available_products * 100.0 / NULLIF(assortment_width, 0), 1) AS full_availability_pct
+FROM market_scoring
+ORDER BY oos_rate_pct ASC, assortment_width DESC;
+-- Note: oos_rate_pct has inverted polarity vs. the old fill_rate —
+-- lower is better, so ASC surfaces healthiest markets first
 ```
 
 **2.3 — Price Architecture Analysis**
@@ -329,10 +355,13 @@ SELECT
     subcategory,
     product_id,
     sku,
+    style_color,
     brand_name,
-    CAST(size_count AS INTEGER)                     AS total_sizes,
-    CAST(available_size_count AS INTEGER)            AS available_sizes,
+    TRIM(color_name)                                AS color_name,
+    size_label,
     available,
+    availability_level,
+    available_market,
     in_stock,
     ROUND(discount_pct, 2)                          AS discount_pct,
     {{ discount_tier('discount_pct') }}              AS discount_tier,
@@ -369,9 +398,12 @@ SELECT
     sale_price,
     discount_pct,
     discount_tier,
-    total_sizes,
-    available_sizes,
-    available_sizes * 1.0 / NULLIF(total_sizes, 0)  AS size_fill_rate,
+    style_color,
+    color_name,
+    size_label,
+    available,
+    availability_level,
+    available_market,
     in_stock,
     sport_tags
 FROM {{ ref('stg_nike_catalog') }}
@@ -395,9 +427,13 @@ SELECT
     COUNT(DISTINCT category)                                         AS category_depth,
     ROUND(AVG(full_price), 2)                                        AS avg_full_price,
     ROUND(AVG(discount_pct) * 100, 1)                                AS avg_markdown_pct,
-    ROUND(AVG(size_fill_rate) * 100, 1)                              AS size_availability_pct,
+    ROUND(COUNT(*) FILTER (WHERE available) * 1.0 / NULLIF(COUNT(*), 0) * 100, 1)
+                                                                     AS availability_rate_pct,
+    ROUND(COUNT(*) FILTER (WHERE availability_level = 'OOS') * 1.0 / NULLIF(COUNT(*), 0) * 100, 1)
+                                                                     AS oos_rate_pct,
     ROUND(COUNT(*) FILTER (WHERE in_stock) * 1.0 / NULLIF(COUNT(*), 0) * 100, 1)
                                                                      AS in_stock_rate_pct,
+    COUNT(DISTINCT size_label)                                       AS size_depth,
     ROUND(
       COUNT(*) FILTER (WHERE discount_tier = 'Deep (40%+)') * 1.0
       / NULLIF(COUNT(*), 0) * 100, 1
@@ -429,7 +465,11 @@ SELECT
     COUNT(DISTINCT product_id)                            AS sku_count,
     ROUND(AVG(full_price), 2)                             AS avg_price,
     ROUND(AVG(discount_pct) * 100, 1)                     AS avg_markdown_pct,
-    ROUND(AVG(size_fill_rate) * 100, 1)                   AS size_availability_pct,
+    ROUND(COUNT(*) FILTER (WHERE available) * 1.0 / NULLIF(COUNT(*), 0) * 100, 1)
+                                                          AS availability_rate_pct,
+    ROUND(COUNT(*) FILTER (WHERE availability_level = 'OOS') * 1.0 / NULLIF(COUNT(*), 0) * 100, 1)
+                                                          AS oos_rate_pct,
+    COUNT(DISTINCT size_label)                            AS size_depth,
     COUNT(*) FILTER (WHERE discount_pct > 0)              AS on_promo_count,
     COUNT(*) FILTER (WHERE discount_pct = 0)              AS full_price_count,
     ROUND(
@@ -513,9 +553,9 @@ Hex has native DuckDB support — upload the `.duckdb` file directly or connect 
 
 | Panel | Chart Type | Source Table | Metric |
 |-------|-----------|-------------|--------|
-| Market Overview | Scorecards (4x) | mart_market_performance | Assortment width, Avg markdown, Size availability, Markets |
+| Market Overview | Scorecards (4x) | mart_market_performance | Assortment width, Avg markdown, Availability rate, Markets |
 | Markdown Heatmap | Choropleth map | mart_market_performance | avg_markdown_pct by market |
-| Store Readiness | Bar chart (horizontal) | mart_market_performance | in_stock_rate_pct + size_availability_pct, sorted desc |
+| Store Readiness | Bar chart (horizontal) | mart_market_performance | in_stock_rate_pct + availability_rate_pct, sorted desc |
 | Merchandising Mix | Stacked bar | mart_merchandising_mix | sku_count by category, stacked by gender |
 | Promo vs Full Price | Donut chart | mart_merchandising_mix | on_promo_count vs full_price_count |
 | Price Architecture | Scatter plot | mart_merchandising_mix | avg_price (x) vs avg_markdown_pct (y), sized by sku_count |
@@ -528,9 +568,9 @@ Implied Discounting: Since you have price_local (full price) and sale_price_loca
 Global Price Dispersions: You can analyze how much the full price of the exact same model (model_number or product_name) varies across different country_codes (when converted to a common currency, or just by index).
 Promotional Penetration: Calculate what percentage of the catalog is currently on sale in a given market versus another. Do some countries run deeper sales than others?
 + Assortment & Inventory Health (The "Fill Rate")
-Size Availability (Fill Rate Metrics): You have size_count (total sizes that exist for the shoe) and available_size_count (how many are currently available). You can calculate "Size Fill Rate" globally. A high fill rate means healthy inventory; a low fill rate means broken sizes and lost sales.
+Size Depth: Use COUNT(DISTINCT size_label) per product/market to measure how many size options are offered. ~~(Note: size_count and available_size_count are 100% null in the dataset — use size_label and availability flags instead.)~~
 Assortment Width vs. Depth: Count distinct product_ids by country_code and category. Who has the largest running catalog? Who has the smallest lifestyle catalog?
-Product Availability: The available boolean lets you track what percentage of the listed catalog is actually orderable vs. just a placeholder or out of stock.
+Product Availability: The available boolean and availability_level (OOS, LOW_STOCK, etc.) let you track what percentage of the listed catalog is actually orderable vs. out of stock.
 + Merchandising & Product Mix
 Category Dominance: Break down the percentage of SKUs dedicated to different category and subcategory segments per market.
 Gender Split Analysis: Analyze the ratio of Mens vs. Womens vs. Unisex products (gender_segment) globally. Do certain markets index higher on women's products?
@@ -557,13 +597,14 @@ CLAUDE = anthropic.Anthropic()
 SYSTEM = """You are a retail analytics agent. You have access to these DuckDB tables:
 
 - dbt_retail.mart_market_performance: columns: market, assortment_width,
-  category_depth, avg_full_price, avg_markdown_pct, size_availability_pct,
-  in_stock_rate_pct, deep_markdown_share_pct, promo_penetration_pct,
-  gender_segments_served
+  category_depth, avg_full_price, avg_markdown_pct, availability_rate_pct,
+  oos_rate_pct, in_stock_rate_pct, size_depth, deep_markdown_share_pct,
+  promo_penetration_pct, gender_segments_served
 
 - dbt_retail.mart_merchandising_mix: columns: market, category, gender,
-  sku_count, avg_price, avg_markdown_pct, size_availability_pct,
-  on_promo_count, full_price_count, full_price_sell_through_pct
+  sku_count, avg_price, avg_markdown_pct, availability_rate_pct,
+  oos_rate_pct, size_depth, on_promo_count, full_price_count,
+  full_price_sell_through_pct
 
 Given a question, return ONLY a valid SQL query. No explanation."""
 

@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: mart_market_performance
+    description: "Market-level retail KPIs — store health, geographic expansion readiness, pricing strategy"
+    columns:
+      - name: market
+        tests:
+          - unique
+          - not_null
+      - name: avg_markdown_pct
+        tests:
+          - not_null
+      - name: availability_rate_pct
+        tests:
+          - not_null
+
+  - name: mart_merchandising_mix
+    description: "Category × gender breakdown per market — merchandising effectiveness and assortment planning"
+    columns:
+      - name: market
+        tests:
+          - not_null
+      - name: category
+        tests:
+          - not_null
+      - name: gender
+        tests:
+          - not_null

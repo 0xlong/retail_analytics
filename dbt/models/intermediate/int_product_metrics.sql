@@ -1,0 +1,19 @@
+SELECT
+    country_code,
+    product_id,
+    product_name,
+    category,
+    gender,
+    full_price,
+    sale_price,
+    discount_pct,
+    discount_tier,
+    style_color,
+    color_name,
+    size_label,
+    available,
+    availability_level,
+    available_market,
+    in_stock,
+    sport_tags
+FROM {{ ref('stg_nike_catalog') }}

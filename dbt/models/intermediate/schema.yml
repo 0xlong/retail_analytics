@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: int_product_metrics
+    description: "Product-level metrics — pass-through from staging, extension point for future product calculations"
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+      - name: country_code
+        tests:
+          - not_null

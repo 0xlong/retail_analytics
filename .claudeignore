@@ -1,5 +1,4 @@
 datasets/
-dataset/
 *.csv
 *.parquet
 *.jsonl

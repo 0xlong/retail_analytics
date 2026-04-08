@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: stg_nike_catalog
+    description: "Cleaned and type-cast Nike catalog — drops null columns, standardizes strings, adds discount_tier"
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+      - name: sku
+        tests:
+          - not_null
+      - name: full_price
+        tests:
+          - not_null
+      - name: country_code
+        tests:
+          - not_null

@@ -1,0 +1,12 @@
+version: 2
+
+exposures:
+  - name: global_retail_health_dashboard
+    type: dashboard
+    description: "Hex dashboard — Global Retail Health. Used by Retail Strategy team for weekly market reviews."
+    depends_on:
+      - ref('mart_market_performance')
+      - ref('mart_merchandising_mix')
+    owner:
+      name: "Retail Analytics"
+      email: "retail-analytics@on.com"

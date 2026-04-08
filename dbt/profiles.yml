@@ -1,0 +1,8 @@
+dbt_retail:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../retail.duckdb
+      schema: dbt_retail
+      threads: 4
