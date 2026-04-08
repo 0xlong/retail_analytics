@@ -24,6 +24,7 @@ End-to-end retail analytics project demonstrating the On Analytics tech stack: *
 | 12 | **Split `availability_rate` vs `in_stock_rate`** | Treated `in_stock` as the "Digital Shelf" (active in catalog) and `available` as the "Warehouse Cycle" (measured by HIGH/MEDIUM/LOW/OOS levels). Surfaces ghost inventory where items appear stocked but fulfillment centers are empty. |
 | 13 | **Clustered `sport_tags` → `sport_category` macro** | Raw `sport_tags` had 347 pipe-delimited combos (e.g. `Lifestyle\|Basketball`, `Studio Classes\|Workouts\|Training & Gym\|Yoga`). Extracted primary tag via `SPLIT_PART` and mapped to 9 clean categories (Lifestyle, Running, Basketball, etc.). Unusable as a BI dimension without clustering. |
 | 14 | **Classified `color_name` → `color_trend` macro** | Raw `color_name` had 33K distinct values across 15+ languages (Schwarz, Noir, 黑, ブラック…) with compound `/` separators. Extracted primary color, matched against multilingual core-color dictionary, and classified as Core (Black/White/Grey) vs Seasonal. Enables the "are trendy colorways a markdown liability?" analysis without manual cleanup. |
+| 15 | **Identified and documented currency outliers (NZ - New Zealand)** | Raw data contains anomalous local prices for certain markets (e.g., $23K+ USD equivalent in NZ). Flagged as a data quality issue requiring either upstream correction or a dbt-level exclusion (`WHERE country_code != 'NZ'`) or division logic. I have decided to exclude it in filter in Looker studio.
 
 ---
 

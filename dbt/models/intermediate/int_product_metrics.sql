@@ -1,23 +1,33 @@
+WITH products AS (
+    SELECT * FROM {{ ref('stg_nike_catalog') }}
+),
+rates AS (
+    SELECT * FROM {{ ref('fx_rates') }}
+)
+
 SELECT
-    country_code,
-    product_id,
-    product_name,
-    brand_name,
-    subcategory,
-    category,
-    gender,
-    full_price,
-    sale_price,
-    discount_pct,
-    discount_tier,
-    style_color,
-    color_name,
-    size_label,
-    available,
-    availability_level,
-    available_market,
-    in_stock,
-    sport_tags,
-    {{ sport_category('sport_tags') }} AS sport_category,
-    {{ color_trend('color_name') }}    AS color_trend
-FROM {{ ref('stg_nike_catalog') }}
+    p.country_code,
+    p.product_id,
+    p.product_name,
+    p.brand_name,
+    p.subcategory,
+    p.category,
+    p.gender,
+    p.full_price,
+    ROUND(p.full_price / r.Rate_to_1_USD, 2) AS full_price_usd,
+    p.sale_price,
+    ROUND(p.sale_price / r.Rate_to_1_USD, 2) AS sale_price_usd,
+    p.discount_pct,
+    p.discount_tier,
+    p.style_color,
+    p.color_name,
+    p.size_label,
+    p.available,
+    p.availability_level,
+    p.available_market,
+    p.in_stock,
+    p.sport_tags,
+    {{ sport_category('p.sport_tags') }} AS sport_category,
+    {{ color_trend('p.color_name') }}    AS color_trend
+FROM products p
+LEFT JOIN rates r ON p.currency = r.Currency_Code
