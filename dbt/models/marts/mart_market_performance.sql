@@ -9,7 +9,7 @@ SELECT
     COUNT(DISTINCT product_id)                                                                        AS assortment_width,
     COUNT(DISTINCT category)                                                                          AS category_depth,
     ROUND(AVG(full_price_usd), 2)                                                                     AS avg_full_price_usd,
-    ROUND(AVG(discount_pct) / 100, 4)                                                                 AS avg_markdown_pct,
+    ROUND(AVG(discount_pct), 4)                                                                       AS avg_markdown_pct,
     ROUND(COUNT(*) FILTER (WHERE available) * 1.0 / NULLIF(COUNT(*), 0), 4)                           AS availability_rate_pct,
     ROUND(COUNT(*) FILTER (WHERE availability_level = 'OOS') * 1.0 / NULLIF(COUNT(*), 0), 4)          AS oos_rate_pct,
     ROUND(COUNT(*) FILTER (WHERE in_stock) * 1.0 / NULLIF(COUNT(*), 0), 4)                            AS in_stock_rate_pct,

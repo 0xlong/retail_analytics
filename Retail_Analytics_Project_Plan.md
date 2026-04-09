@@ -671,28 +671,6 @@ pandas
 
 ---
 
-## Git Workflow (Demonstrates Governance)
-
-```bash
-git init
-git checkout -b feature/staging-models
-# ... build staging layer ...
-git add dbt_retail/models/staging/
-git commit -m "feat: add staging model with type casting and discount tier macro"
-# Create PR, self-review, merge to main
-
-git checkout -b feature/mart-models
-# ... build marts ...
-# Repeat PR workflow
-
-git checkout -b feature/ai-agent
-# ... build agent ...
-```
-
-This shows the version-controlled analytics workflow they explicitly call out as a differentiator.
-
----
-
 ## What This Proves to On's Hiring Team
 
 | Job Requirement | Where It Shows |

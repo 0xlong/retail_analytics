@@ -27,7 +27,8 @@ SELECT
     p.available_market,
     p.in_stock,
     p.sport_tags,
-    {{ sport_category('p.sport_tags') }} AS sport_category,
-    {{ color_trend('p.color_name') }}    AS color_trend
+    {{ sport_category('p.sport_tags') }}  AS sport_category,
+    {{ color_trend('p.color_name') }}     AS color_trend,
+    {{ gender_cluster('p.gender') }}      AS gender_cluster
 FROM products p
 LEFT JOIN rates r ON p.currency = r.Currency_Code

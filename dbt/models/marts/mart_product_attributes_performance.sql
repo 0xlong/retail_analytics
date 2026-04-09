@@ -9,7 +9,7 @@ SELECT
     brand_name,
     category,
     subcategory,
-    gender,
+    gender_cluster,
     sport_category,
     color_trend,
     COUNT(DISTINCT product_id)                                                                AS sku_count,
@@ -19,4 +19,4 @@ SELECT
     ROUND(COUNT(*) FILTER (WHERE availability_level = 'OOS') * 1.0 / NULLIF(COUNT(*), 0), 4)  AS oos_rate_pct,
     ROUND(COUNT(*) FILTER (WHERE discount_pct = 0) * 1.0 / NULLIF(COUNT(*), 0), 4)            AS full_price_sell_through_pct
 FROM products
-GROUP BY country_code, brand_name, category, subcategory, gender, sport_category, color_trend
+GROUP BY country_code, brand_name, category, subcategory, gender_cluster, sport_category, color_trend

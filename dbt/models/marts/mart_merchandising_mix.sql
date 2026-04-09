@@ -7,8 +7,8 @@ WITH products AS (
 SELECT
     country_code                                                                                      AS market,
     category,
-    gender,
-    
+    gender_cluster,
+
     -- Base counts (Additive - Use these in Looker for custom metrics)
     COUNT(*)                                                                                          AS total_items_count,
     COUNT(*) FILTER (WHERE available)                                                                 AS available_items_count,
@@ -26,11 +26,11 @@ SELECT
 
     -- Pre-calculated rates & averages (Warning: NON-ADDITIVE, do not SUM in BI tools)
     ROUND(AVG(full_price_usd), 2)                                                                     AS avg_price_usd,
-    ROUND(AVG(discount_pct) / 100, 4)                                                                 AS avg_markdown_pct,
+    ROUND(AVG(discount_pct), 4)                                                                       AS avg_markdown_pct,
     ROUND(COUNT(*) FILTER (WHERE available) * 1.0 / NULLIF(COUNT(*), 0), 4)                           AS availability_rate_pct,
     ROUND(COUNT(*) FILTER (WHERE availability_level = 'OOS') * 1.0 / NULLIF(COUNT(*), 0), 4)          AS oos_rate_pct,
     ROUND(
       COUNT(*) FILTER (WHERE discount_pct = 0) * 1.0 / NULLIF(COUNT(*), 0), 4
     )                                                                                                 AS full_price_sell_through_pct
 FROM products
-GROUP BY country_code, category, gender
+GROUP BY country_code, category, gender_cluster

@@ -24,6 +24,6 @@ models:
       - name: category
         tests:
           - not_null
-      - name: gender
+      - name: gender_cluster
         tests:
           - not_null
