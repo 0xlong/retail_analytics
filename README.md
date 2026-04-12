@@ -10,6 +10,7 @@ An end-to-end retail analytics and data modeling platform tailored for the sport
 
 [Nike Global Retail Analytics](https://lookerstudio.google.com/u/0/reporting/751f8413-75b4-4070-a182-f6e2bff0da82/page/bSYuF)
 
+[nike_retail_analytics.webm](https://github.com/user-attachments/assets/f51fd6af-d0f3-42b7-85dd-34aca9df46a0)
 
 ## 🎯 Project Mission
 
