@@ -88,10 +88,3 @@ Rather than building isolated, static reports, this repo establishes a **dashboa
    dbt deps
    dbt build
    ```
-
-## 📈 Roadmap
-- [ ] Transition mock datasets to streaming API ingestions.
-- [ ] Add explicit ML models for product recommendation on D2C properties.
-
----
-*Built to challenge the status quo of retail data architecture.*
