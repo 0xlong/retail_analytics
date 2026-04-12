@@ -6,6 +6,11 @@
 
 An end-to-end retail analytics and data modeling platform tailored for the sportswear, athletic, and premium retail space. This project demonstrates a production-scale approach to translating raw, complex retail point-of-sale and e-commerce data into actionable insights for merchandising, operations, and leadership.
 
+## Dashboard
+
+[Nike Global Retail Analytics](https://lookerstudio.google.com/u/0/reporting/751f8413-75b4-4070-a182-f6e2bff0da82/page/bSYuF)
+
+
 ## 🎯 Project Mission
 
 The primary goal of this platform is to act as the bridge between raw data and commercial decision-making. By maintaining a robust, scalable analytics infrastructure, this ecosystem empowers cross-functional teams to act independently on data.
