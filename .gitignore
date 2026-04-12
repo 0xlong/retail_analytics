@@ -167,3 +167,7 @@ CLAUDE.md
 *.npz
 retail_analytics/
 __pycache__/
+
+# Private Documentation
+looker_studio_new_charts_guide.md
+Retail_Analytics_Project_Plan.md
